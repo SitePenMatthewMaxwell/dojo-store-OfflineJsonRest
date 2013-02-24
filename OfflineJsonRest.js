@@ -110,11 +110,6 @@ define([
                 return this._memoryQuery(object, options);
             }
         },
-        // utilize dojo/store/Memory's built in query
-        // *may make sense to just pull in SimpleQueryEngine, as this feels a little janky
-        _memoryQuery: function () {
-            return this.inherited("query", arguments);
-        },
         // sync items with the server
         sync: function () {
             if (this.isOnline) {
