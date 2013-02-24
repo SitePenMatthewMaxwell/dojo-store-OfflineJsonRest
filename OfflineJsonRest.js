@@ -1,10 +1,11 @@
 define([
     "dojo/_base/declare",
+    "dojo/_base/Deferred",
     "dojo/_base/lang",
     "dojo/json",
     "dojo/store/Memory",
     "dojo/store/JsonRest"
-], function (declare, lang, JSON, Memory, JsonRest) {
+], function (declare, Deferred, lang, JSON, Memory, JsonRest) {
     var memoryStore = new Memory(),
         jsonRestStore = new JsonRest();
 
@@ -43,20 +44,30 @@ define([
         // get an item by its id, returns the item or a promise to the item
         get: function (id) {
             var item = this._memoryGet(id),
+                getDeferred = new Deferred(),
                 getPromise;
 
             if (this.isOnline && item && item.outdated && !item.removed) {
                 getPromise = this._jsonRestGet(id);
                 
-                getPromise.then(function (item) {
+                getPromise.then(lang.hitch(this, function (item) {
+                    // if the request succeeds,  update memory and local, and resolve to the item
+                    
                     item.outdated = false;
                     item.modified = false;
                     
                     this._memoryPut(item);
                     this._localPut(item);
-                });
+                    
+                    getDeferred.resolve(item);
+                }), lang.hitch(this, function () {
+                    // if the request fails, put the store into offline mode and resolve to the stored item
+                    this.makeOffline();
+                    
+                    getDeferred.resolve(item);
+                }));
                 
-                return getPromise;
+                return getDeferred.promise;
             } else {
                 return item;
             }
