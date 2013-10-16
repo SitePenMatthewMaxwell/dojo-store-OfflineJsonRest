@@ -10,16 +10,28 @@ define([
         jsonRestStore = new JsonRest();
 
     return declare(null, {
+        // summary:
+        //      JsonRest store that allows offline storage.
+        // isOnline: Boolean
+        //      If the store is in online mode.  If so, the JsonRest store methods are used.
         isOnline: true,
+        // hasLocalStorage: Boolean
+        //      If localStorage functionality exists in the browser.
         hasLocalStorage: "localStorage" in window,
+        // accepts: String
+        //      Accepts headers for JsonRest call.
         accepts: "application/javascript, application/json",
-        constructor: function (options) {
+        constructor: function (/*Object?*/ options) {
+            // summary:
+            //      Constructor of the class.
+            // options: [optional] Object
+            //      Properties/methods that will be mixed into the class.
             var data, item;
             
             lang.mixin(options);
             
             data = [];
-            // if localStorage is available and contains data for a store of this name, pull it in
+            // Populate with any existing data in localStorage.
             if (this.hasLocalStorage) {
                 for (item in localStorage) {
                     if (localStorage.hasOwnProperty(item) && item.indexOf(this.name) > -1) {
@@ -32,7 +44,7 @@ define([
             this.sync();
         },
         
-        /* piggy back off of existing methods */
+        // Existing store methods
         _memoryGet: lang.hitch(this, memoryStore.get),
         _jsonRestGet: lang.hitch(this, jsonRestStore.get),
         _setData: lang.hitch(this, memoryStore.setData),
@@ -41,8 +53,12 @@ define([
         _memoryQuery: lang.hitch(this, memoryStore.query),
         _jsonRestQuery: lang.hitch(this, jsonRestStore.query),
         
-        // get an item by its id, returns the item or a promise to the item
-        get: function (id) {
+        get: function (/*String|Number*/ id) {
+            // summary:
+            //      Gets an item form the store.
+            // id: String|Number
+            //      ID of the object to retrieve.
+            // returns: Object|Promise
             var item = this._memoryGet(id),
                 getDeferred = new Deferred(),
                 getPromise;
@@ -52,7 +68,6 @@ define([
                 
                 getPromise.then(lang.hitch(this, function (item) {
                     // if the request succeeds,  update memory and local, and resolve to the item
-                    
                     item.outdated = false;
                     item.modified = false;
                     
@@ -72,8 +87,11 @@ define([
                 return item;
             }
         },
-        // locally store an item in localStorage
-        _localPut: function (object) {
+        _localPut: function (/*Object*/ object) {
+            // summary:
+            //      Store an item in localStorage.
+            // object: Object
+            //      Object to store.
             if (this.hasLocalStorage) {
                 try {
                     localStorage.setItem(this.name + '-' + this.getIdentity(object), JSON.stringify(object));
@@ -83,8 +101,13 @@ define([
                 }
             }
         },
-        // put an object into the store
-        put: function (object, options) {
+        put: function (/*Object*/ object, /*PutDirectives?*/ options) {
+            // summary:
+            //      Put an object into the store.
+            // object: Object
+            //      Object to put into the store.
+            // options: [optional] PutDirectives
+            //      Options for the put call.
             var putPromise;
             
             if (this.isOnline) {
@@ -102,16 +125,25 @@ define([
             this._memoryPut(object, options);
             this._localPut(object, options);
         },
-        // if the store is online, use json rest query, otherwise use memory query
-        query: function (query, options) {
+        query: function (/*Object*/ query, /*QueryOptions*/ options) {
+            // summary:
+            //      Query the store for data.  If the store is online, JsonRest is used.
+            //      Otherwise, the Memory store is used.
+            // query: Object
+            //      Object containing key value pairs that can be converted
+            //      into the query.
+            // options: [optional] QueryOptions
+            //      Options to be used in the query, such as count, start, etc.
+            //  |   store.query({ name: "foo" });
             if (this.isOnline) {
                 return this._jsonRestQuery(object, options);
             } else {
                 return this._memoryQuery(object, options);
             }
         },
-        // sync items with the server
         sync: function () {
+            // summary:
+            //      Attempts to sync items with the server.
             if (this.isOnline) {
                 this._memoryQuery(function (object) {
                     return object.outdated || object.modified
@@ -120,8 +152,9 @@ define([
                 });
             }
         },
-        // purge the oldest item in the store
         _purge: function () {
+            // summary:
+            //      Purges the oldest item in the store.
             var item = this.data[0];
             
             item.removed = true;
@@ -133,13 +166,15 @@ define([
             
             this.sync();
         },
-        // set store to online mode
         makeOnline: function () {
+            // summary:
+            //      Set the store into online mode.
             this.isOnline = true;
             this.sync();
         },
-        // set store to offline mode
         makeOffline: function () {
+            // summary:
+            //      Set the store into offline mode.
             this.isOnline = false;
         }
     });
