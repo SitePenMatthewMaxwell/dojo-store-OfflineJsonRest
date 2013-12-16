@@ -136,9 +136,9 @@ define([
             //      Options to be used in the query, such as count, start, etc.
             //  |   store.query({ name: "foo" });
             if (this.isOnline) {
-                return this._jsonRestQuery(object, options);
+                return this._jsonRestQuery(query, options);
             } else {
-                return this._memoryQuery(object, options);
+                return this._memoryQuery(query, options);
             }
         },
         sync: function () {
